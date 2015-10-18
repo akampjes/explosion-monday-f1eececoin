@@ -1,0 +1,28 @@
+# grab current coin
+require 'net/http'
+require 'digest'
+require 'securerandom'
+
+# Debugging
+require 'pry'
+
+MY_NAME = 'andrew'
+CURRENT_COIN_URI = URI('https://fleececoin.herokuapp.com/current')
+COIN_SUBMISSION_URI = URI('https://fleececoin.herokuapp.com/coins')
+
+current_coin = Net::HTTP.get(CURRENT_COIN_URI)
+
+random_number = SecureRandom.random_number(1000)
+while(true)
+  random_number += 1
+  random_string = random_number.to_s(36)
+  maybe_coin = Digest::SHA256.hexdigest("#{current_coin},#{MY_NAME},#{random_string}")
+  break if maybe_coin.start_with?('f1eece')
+end
+
+puts maybe_coin
+puts random_string
+
+response = Net::HTTP.post_form(COIN_SUBMISSION_URI, "coin" => "#{current_coin},#{MY_NAME},#{random_string}")
+puts response.to_s
+
