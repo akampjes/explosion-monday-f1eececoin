@@ -16,6 +16,8 @@ random_number = SecureRandom.random_number(1000)
 
 start_time = nil
 iterations = 0
+start_of_string = "#{current_coin},#{MY_NAME},"
+
 while(true)
   # BENCHMARKING
   if iterations % BENCH_LOOPS == 0
@@ -29,7 +31,7 @@ while(true)
 
   random_number += 1
   random_string = random_number.to_s(36)
-  maybe_coin = Digest::SHA256.hexdigest("#{current_coin},#{MY_NAME},#{random_string}")
+  maybe_coin = Digest::SHA256.hexdigest(start_of_string + random_string)
   break if maybe_coin.start_with?('f1eece')
 end
 
