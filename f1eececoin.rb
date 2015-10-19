@@ -11,18 +11,21 @@ CURRENT_COIN_URI = URI('https://fleececoin.herokuapp.com/current')
 COIN_SUBMISSION_URI = URI('https://fleececoin.herokuapp.com/coins')
 BENCH_LOOPS = 100_000
 
+abort_attempt = false
+
 while(true)
-  current_coin = Net::HTTP.get(CURRENT_COIN_URI)
-
-  random_number = SecureRandom.random_number(1000)
-  random_string = random_number.to_s(36)
-
-  start_time = nil
-  iterations = 0
-  start_of_string = "#{current_coin},#{MY_NAME},"
   maybe_coin = ''
 
-  abort_attempt = false
+  if abort_attempt
+    # current_coin has already been set
+    abort_attempt = false
+  else
+    current_coin = Net::HTTP.get(CURRENT_COIN_URI)
+  end
+
+  start_of_string = current_coin + ',' + MY_NAME + ','
+  random_number = SecureRandom.random_number(1000)
+  random_string = random_number.to_s(36)
 
   check_current_coin_thread = Thread.new do
     new_current_coin = Net::HTTP.get(CURRENT_COIN_URI)
@@ -32,11 +35,16 @@ while(true)
       new_current_coin = Net::HTTP.get(CURRENT_COIN_URI)
     end
 
+    current_coin = new_current_coin
     abort_attempt = true
   end
 
   # decrease priority, not that important
-  check_current_coin_thread.priority = -2
+  check_current_coin_thread.priority = -20
+
+
+  start_time = nil
+  iterations = 0
 
   while !maybe_coin.start_with?('f1eece') && !abort_attempt
     # BENCHMARKING
@@ -53,19 +61,18 @@ while(true)
     maybe_coin = Digest::SHA256.hexdigest(start_of_string + random_string)
   end
 
-  if check_current_coin_thread.alive?
-    Thread.kill(check_current_coin_thread)
-  end
-
   if abort_attempt
     puts "Too slow, lost round"
   else
+    response = Net::HTTP.post_form(COIN_SUBMISSION_URI, "coin" => start_of_string + random_string)
+
     puts "RESULTS"
     puts maybe_coin
-    puts random_string
-
-    response = Net::HTTP.post_form(COIN_SUBMISSION_URI, "coin" => "#{current_coin},#{MY_NAME},#{random_string}")
     puts response.to_s
+  end
+
+  if check_current_coin_thread.alive?
+    Thread.kill(check_current_coin_thread)
   end
 end
 
