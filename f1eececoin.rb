@@ -8,44 +8,42 @@ CURRENT_COIN_URI = URI('https://fleececoin.herokuapp.com/current')
 COIN_SUBMISSION_URI = URI('https://fleececoin.herokuapp.com/coins')
 BENCH_LOOPS = 100_000
 
-abort_attempt = true
-current_coin = Net::HTTP.get(CURRENT_COIN_URI)
+def get_current_coin
+  response = Net::HTTP.get_response(CURRENT_COIN_URI)
+  if response.code == '200'
+    response.read_body
+  else
+    nil
+  end
+end
+
+
+abort_attempt = false
+current_coin = get_current_coin
 
 while(true)
   maybe_coin = ''
-
-  if abort_attempt
-    # current_coin has already been set
-    abort_attempt = false
-  else
-    current_coin = Net::HTTP.get(CURRENT_COIN_URI)
-  end
+  abort_attempt = false
 
   start_of_string = current_coin + ',' + MY_NAME + ','
-  random_number = SecureRandom.random_number(1000)
-  random_string = random_number.to_s(36)
+  random_string = SecureRandom.random_number(100_000).to_s(36)
 
+  # Thread that checks if the current coin has changed
+  # Sets abort_attempt from inside here if we need to stop
   check_current_coin_thread = Thread.new do
-    new_current_coin = current_coin
-
-    response = Net::HTTP.get_response(CURRENT_COIN_URI)
-    new_current_coin = response.read_body if response.code == '200'
-
+    # Getting current coin may fail, so use the exsting coin
+    new_current_coin = get_current_coin || current_coin
     while(new_current_coin == current_coin)
       sleep(1)
 
-      response = Net::HTTP.get_response(CURRENT_COIN_URI)
-      if response.code == '200'
-        puts response.read_body
-        new_current_coin = response.read_body
-      end
+      coin = get_current_coin
+      new_current_coin = coin unless coin.nil?
     end
 
     current_coin = new_current_coin
     abort_attempt = true
   end
-
-  # decrease priority, not that important
+  # decrease priority, therad not that important
   check_current_coin_thread.priority = -20
 
 
@@ -71,12 +69,16 @@ while(true)
     puts "Too slow, lost round"
   else
     response = Net::HTTP.post_form(COIN_SUBMISSION_URI, "coin" => start_of_string + random_string)
+    # Since we just worked out the coin,
+    # we can save what the coin must be and save us some time
+    current_coin = maybe_coin
 
     puts "RESULTS"
     puts maybe_coin
     puts response.to_s
   end
 
+  # Kill thread so we don't leave it hanging
   if check_current_coin_thread.alive?
     Thread.kill(check_current_coin_thread)
   end
