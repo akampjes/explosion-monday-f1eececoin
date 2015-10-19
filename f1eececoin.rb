@@ -38,7 +38,7 @@ while(true)
   # decrease priority, not that important
   check_current_coin_thread.priority = -2
 
-  while !maybe_coin.start_with?('f1eece')# && !abort_attempt
+  while !maybe_coin.start_with?('f1eece') && !abort_attempt
     # BENCHMARKING
     if iterations % BENCH_LOOPS == 0
       end_time = Time.now
