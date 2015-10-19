@@ -3,15 +3,13 @@ require 'digest'
 require 'securerandom'
 require 'thread'
 
-# Debugging
-require 'pry'
-
 MY_NAME = 'andrew'
 CURRENT_COIN_URI = URI('https://fleececoin.herokuapp.com/current')
 COIN_SUBMISSION_URI = URI('https://fleececoin.herokuapp.com/coins')
 BENCH_LOOPS = 100_000
 
-abort_attempt = false
+abort_attempt = true
+current_coin = Net::HTTP.get(CURRENT_COIN_URI)
 
 while(true)
   maybe_coin = ''
@@ -28,11 +26,19 @@ while(true)
   random_string = random_number.to_s(36)
 
   check_current_coin_thread = Thread.new do
-    new_current_coin = Net::HTTP.get(CURRENT_COIN_URI)
+    new_current_coin = current_coin
+
+    response = Net::HTTP.get_response(CURRENT_COIN_URI)
+    new_current_coin = response.read_body if response.code == '200'
+
     while(new_current_coin == current_coin)
       sleep(1)
 
-      new_current_coin = Net::HTTP.get(CURRENT_COIN_URI)
+      response = Net::HTTP.get_response(CURRENT_COIN_URI)
+      if response.code == '200'
+        puts response.read_body
+        new_current_coin = response.read_body
+      end
     end
 
     current_coin = new_current_coin
