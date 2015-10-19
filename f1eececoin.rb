@@ -13,12 +13,14 @@ BENCH_LOOPS = 100_000
 current_coin = Net::HTTP.get(CURRENT_COIN_URI)
 
 random_number = SecureRandom.random_number(1000)
+random_string = random_number.to_s(36)
 
 start_time = nil
 iterations = 0
 start_of_string = "#{current_coin},#{MY_NAME},"
+maybe_coin = ''
 
-while(true)
+while !maybe_coin.start_with?('f1eece')
   # BENCHMARKING
   if iterations % BENCH_LOOPS == 0
     end_time = Time.now
@@ -29,10 +31,8 @@ while(true)
   # END BENCHMARKING
 
 
-  random_number += 1
-  random_string = random_number.to_s(36)
+  random_string.next!
   maybe_coin = Digest::SHA256.hexdigest(start_of_string + random_string)
-  break if maybe_coin.start_with?('f1eece')
 end
 
 puts maybe_coin
