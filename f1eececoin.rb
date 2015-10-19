@@ -47,17 +47,17 @@ while(true)
   check_current_coin_thread.priority = -20
 
 
-  start_time = nil
-  iterations = 0
+  #start_time = nil
+  #iterations = 0
 
   while !maybe_coin.start_with?('f1eece') && !abort_attempt
     # BENCHMARKING
-    if iterations % BENCH_LOOPS == 0
-      end_time = Time.now
-      puts "#{BENCH_LOOPS} in #{(end_time - start_time) * 1000} milliseconds" unless start_time.nil?
-      start_time = Time.now
-    end
-    iterations += 1
+    #if iterations % BENCH_LOOPS == 0
+    #  end_time = Time.now
+    #  puts "#{BENCH_LOOPS} in #{(end_time - start_time) * 1000} milliseconds" unless start_time.nil?
+    #  start_time = Time.now
+    #end
+    #iterations += 1
     # END BENCHMARKING
 
 
@@ -65,17 +65,13 @@ while(true)
     maybe_coin = Digest::SHA256.hexdigest(start_of_string + random_string)
   end
 
-  if abort_attempt
-    puts "Too slow, lost round"
-  else
+  unless abort_attempt
     response = Net::HTTP.post_form(COIN_SUBMISSION_URI, "coin" => start_of_string + random_string)
+    puts 'woncoin'
+
     # Since we just worked out the coin,
     # we can save what the coin must be and save us some time
     current_coin = maybe_coin
-
-    puts "RESULTS"
-    puts maybe_coin
-    puts response.to_s
   end
 
   # Kill thread so we don't leave it hanging
